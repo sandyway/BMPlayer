@@ -45,7 +45,7 @@ public protocol BMPlayerDelegate : class {
 
 open class BMPlayer: UIView {
     
-    weak var delegate: BMPlayerDelegate?
+    open weak var delegate: BMPlayerDelegate?
     
     open var backBlock:(() -> Void)?
     
