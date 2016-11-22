@@ -10,7 +10,7 @@ import UIKit
 import NVActivityIndicatorView
 
 
-open class BMPlayerControlView: UIView, BMPlayerCustomControlView {
+class BMPlayerControlView: UIView, BMPlayerCustomControlView {
     
     weak var delegate: BMPlayerControlViewDelegate?
     var playerTitleLabel        : UILabel?  { get { return  titleLabel } }

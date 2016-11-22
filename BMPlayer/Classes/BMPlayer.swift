@@ -462,7 +462,8 @@ open class BMPlayer: UIView {
         self.play()
     }
     
-    @objc fileprivate func playButtonPressed(_ button: UIButton) {
+    @objc fileprivate func playButtonPressed(_ button: UIButton) {        
+        NotificationCenter.default.post(name: NSNotification.Name(rawValue: "ClickBMPlayerPlayButtonNotify"), object: button.isSelected)
         if button.isSelected {
             self.pause()
         } else {
