@@ -41,7 +41,7 @@ public protocol BMPlayerCustomControlView  {
     var playerCurrentTimeLabel  : UILabel?  { get }
     var playerTotalTimeLabel    : UILabel?  { get }
     
-    open var playerPlayButton        : UIButton? { get }
+    var playerPlayButton        : UIButton? { get }
     var playerFullScreenButton  : UIButton? { get }
     var playerBackButton        : UIButton? { get }
     var playerReplayButton      : UIButton? { get }

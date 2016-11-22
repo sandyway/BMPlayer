@@ -17,7 +17,7 @@ class BMPlayerControlView: UIView, BMPlayerCustomControlView {
     var playerCurrentTimeLabel  : UILabel?  { get { return  currentTimeLabel } }
     var playerTotalTimeLabel    : UILabel?  { get { return  totalTimeLabel } }
     
-    var playerPlayButton        : UIButton? { get { return  playButton } }
+    open var playerPlayButton        : UIButton? { get { return  playButton } }
     var playerFullScreenButton  : UIButton? { get { return  fullScreenButton } }
     var playerBackButton        : UIButton? { get { return  backButton } }
     var playerReplayButton      : UIButton? { get { return  centerButton } }
