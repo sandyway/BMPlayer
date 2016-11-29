@@ -193,6 +193,7 @@ open class BMPlayer: UIView {
         playerLayer?.play()
         isPauseByUser = false
         isPlayToTheEnd = false
+        self.controlView.hideLoader()
         delegate?.bmPlayerPlaying()
     }
     
@@ -425,19 +426,17 @@ open class BMPlayer: UIView {
         autoFadeOutControlBar()
         let target = self.totalDuration * Double(sender.value)
         
+        controlView.showLoader()
         if isPlayToTheEnd {
             isPlayToTheEnd = false
-            controlView.showLoader()
             playerLayer?.seekToTime(target, completionHandler: {
                 self.play()
                 self.delegate?.bmProgressSliderTouchEnded()
                 self.controlView.playerPlayButton?.isEnabled = true
             })
         } else {
-            controlView.showLoader()
             playerLayer?.seekToTime(target, completionHandler: {
                 self.autoPlay()
-                self.controlView.hideLoader()
                 self.delegate?.bmProgressSliderTouchEnded()
                 self.controlView.playerPlayButton?.isEnabled = true
             })
@@ -492,6 +491,7 @@ open class BMPlayer: UIView {
             NotificationCenter.default.post(name: NSNotification.Name(rawValue: "ClickBMPlayerPlayButtonNotify"), object: false)
         } else {
             if isPlayToTheEnd {
+                isPlayToTheEnd = false
                 replayButtonPressed()
             }else {
                 self.play()
@@ -656,13 +656,11 @@ extension BMPlayer: BMPlayerLayerViewDelegate {
         case BMPlayerState.readyToPlay:
             if shouldSeekTo != 0 {
                 playerLayer?.seekToTime(shouldSeekTo, completionHandler: {
-                    self.controlView.hideLoader()
                     self.play()
                 })
                 shouldSeekTo = 0
             }else{
                 shouldSeekTo = 0
-                self.controlView.hideLoader()
                 self.play()
             }
         case BMPlayerState.buffering:
@@ -670,10 +668,10 @@ extension BMPlayer: BMPlayerLayerViewDelegate {
             controlView.showLoader()
             playStateDidChanged()
         case BMPlayerState.bufferFinished:
-            controlView.hideLoader()
             playStateDidChanged()
             autoPlay()
         case BMPlayerState.playedToTheEnd:
+            controlView.hideLoader()
             isPlayToTheEnd = true
             controlView.playerPlayButton?.isSelected = false
             controlView.showPlayToTheEndView()
