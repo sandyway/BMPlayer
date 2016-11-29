@@ -190,7 +190,7 @@ open class BMPlayerLayerView: UIView {
         if self.player?.currentItem?.status == AVPlayerItemStatus.readyToPlay {
             let draggedTime = CMTimeMake(Int64(secounds), 1)
             self.player!.seek(to: draggedTime, toleranceBefore: kCMTimeZero, toleranceAfter: kCMTimeZero, completionHandler: { (finished) in
-                
+                completionHandler?()
             })
         }
     }
@@ -253,6 +253,7 @@ open class BMPlayerLayerView: UIView {
     
     // MARK: - 计时器事件
     @objc fileprivate func playerTimerAction() {
+        
         if let playerItem = playerItem {
             if playerItem.duration.timescale != 0 {
                 let currentTime = CMTimeGetSeconds(self.player!.currentTime())
@@ -264,31 +265,36 @@ open class BMPlayerLayerView: UIView {
     }
     
     fileprivate func updateStatus() {
+        
         if let player = player {
-            if playerItem!.isPlaybackLikelyToKeepUp || playerItem!.isPlaybackBufferFull {
-                self.state = .bufferFinished
-            } else {
-                self.state = .buffering
-            }
+            
+            //            if playerItem!.isPlaybackLikelyToKeepUp || playerItem!.isPlaybackBufferFull {
+            //                self.state = .bufferFinished
+            //            } else {
+            //                self.state = .buffering
+            //            }
             
             if player.rate == 0.0 {
                 if player.error != nil {
                     self.state = .error
                     return
                 }
+                
                 if let currentItem = player.currentItem {
+                    
                     if player.currentTime() >= currentItem.duration {
                         if self.state != .playedToTheEnd {
                             self.state = .playedToTheEnd
                         }
-                        
-                        return
-                    }
-                    if currentItem.isPlaybackLikelyToKeepUp || currentItem.isPlaybackBufferFull {
-                        delegate?.bmPlayer(player: self, playerIsPlaying: false)
+                        //                        return
                     }
                     
+                    //                    if currentItem.isPlaybackLikelyToKeepUp || currentItem.isPlaybackBufferFull {
+                    //
+                    //                    }
+                    
                 }
+                delegate?.bmPlayer(player: self, playerIsPlaying: false)
             } else {
                 delegate?.bmPlayer(player: self, playerIsPlaying: true)
             }
@@ -303,8 +309,31 @@ open class BMPlayerLayerView: UIView {
         }
     }
     
+    var active = true
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        
+        NotificationCenter.default.addObserver(forName: NSNotification.Name(rawValue: NSNotification.Name.UIApplicationDidEnterBackground.rawValue), object: nil, queue: nil) { [weak self](notification) in
+            guard self != nil else { return }
+            self!.active = true
+        }
+        
+        NotificationCenter.default.addObserver(forName: NSNotification.Name(rawValue: NSNotification.Name.UIApplicationWillEnterForeground.rawValue), object: nil, queue: nil) { [weak self](notification) in
+            guard self != nil else { return }
+            self!.active = false
+        }
+    }
+    
+    required public init?(coder aDecoder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
     // MARK: - KVO
     override open func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
+        
+        if !active {return}
+        if !isPlaying {return}
+        
         if let item = object as? AVPlayerItem, let keyPath = keyPath {
             if item == self.playerItem {
                 switch keyPath {
@@ -343,7 +372,7 @@ open class BMPlayerLayerView: UIView {
             }
         }
         
-        if keyPath == "rate" {
+        if player == object as? AVPlayer, let p = player {
             updateStatus()
         }
     }

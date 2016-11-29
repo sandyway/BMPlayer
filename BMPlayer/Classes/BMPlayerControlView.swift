@@ -128,7 +128,7 @@ class BMPlayerControlView: UIView, BMPlayerCustomControlView {
             }
             fullScreenButton.setImage(BMImageResourcePath("BMPlayer_portialscreen"), for: UIControlState())
             ratioButton.isHidden = false
-            chooseDefitionView.isHidden = false
+            chooseDefitionView.isHidden = true
             if BMPlayerConf.topBarShowInCase.rawValue == 2 {
                 topMaskView.isHidden = true
             } else {
@@ -161,7 +161,7 @@ class BMPlayerControlView: UIView, BMPlayerCustomControlView {
     }
     
     func showPlayToTheEndView() {
-        centerButton.isHidden = false
+        //        centerButton.isHidden = false
     }
     
     func showLoader() {

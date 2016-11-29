@@ -37,10 +37,16 @@ public enum BMPlayerAspectRatio : Int {
 }
 
 public protocol BMPlayerDelegate : class {
+    
     func bmPlayer(player: BMPlayer ,playerStateDidChange state: BMPlayerState)
     func bmPlayer(player: BMPlayer ,loadedTimeDidChange loadedDuration: TimeInterval, totalDuration: TimeInterval)
     func bmPlayer(player: BMPlayer ,playTimeDidChange currentTime : TimeInterval, totalTime: TimeInterval)
     func bmPlayer(player: BMPlayer ,playerIsPlaying playing: Bool)
+    func bmProgressSliderTouchBegan()
+    func bmProgressSliderTouchEnded()
+    func bmProgressSliderValueChanged()
+    func bmPlayerPlaying()
+    func bmPlayerDidPause()
 }
 
 open class BMPlayer: UIView {
@@ -111,7 +117,7 @@ open class BMPlayer: UIView {
     fileprivate var isSlowed        = false
     fileprivate var isMirrored      = false
     fileprivate var isPlayToTheEnd  = false {
-        didSet { controlView.playerReplayButton?.isHidden = !isPlayToTheEnd }
+        didSet { controlView.playerReplayButton?.isHidden = true }
     }
     
     //视频画面比例
@@ -183,10 +189,11 @@ open class BMPlayer: UIView {
             isURLSet                = true
         }
         
-        
         controlView.playerPlayButton?.isSelected = true
         playerLayer?.play()
         isPauseByUser = false
+        isPlayToTheEnd = false
+        delegate?.bmPlayerPlaying()
     }
     
     /**
@@ -198,6 +205,7 @@ open class BMPlayer: UIView {
         controlView.playerPlayButton?.isSelected = false
         playerLayer?.pause()
         isPauseByUser = !allow
+        delegate?.bmPlayerDidPause()
     }
     
     /**
@@ -207,8 +215,10 @@ open class BMPlayer: UIView {
      */
     open func seek(_ to:TimeInterval) {
         self.shouldSeekTo = to
+        controlView.showLoader()
         playerLayer?.seekToTime(to, completionHandler: {
             self.shouldSeekTo = 0
+            self.controlView.hideLoader()
         })
     }
     
@@ -286,6 +296,7 @@ open class BMPlayer: UIView {
     }
     
     @objc fileprivate func tapGestureTapped(_ sender: UIGestureRecognizer) {
+        
         if isMaskShowing {
             hideControlViewAnimated()
             autoFadeOutControlBar()
@@ -295,6 +306,9 @@ open class BMPlayer: UIView {
     }
     
     @objc fileprivate func panDirection(_ pan: UIPanGestureRecognizer) {
+        
+        //        if !isPlaying {return}
+        
         // 根据在view上Pan的位置，确定是调音量还是亮度
         let locationPoint = pan.location(in: self)
         
@@ -347,7 +361,6 @@ open class BMPlayer: UIView {
                     isPlayToTheEnd = false
                     playerLayer?.seekToTime(self.sumTime, completionHandler: {
                         self.play()
-                        self.play()
                     })
                 } else {
                     playerLayer?.seekToTime(self.sumTime, completionHandler: {
@@ -394,13 +407,17 @@ open class BMPlayer: UIView {
     }
     
     @objc fileprivate func progressSliderTouchBegan(_ sender: UISlider)  {
+        
         playerLayer?.onTimeSliderBegan()
         isSliderSliding = true
+        delegate?.bmProgressSliderTouchBegan()
+        controlView.playerPlayButton?.isEnabled = false
     }
     
     @objc fileprivate func progressSliderValueChanged(_ sender: UISlider)  {
         self.pause(allowAutoPlay: true)
         cancelAutoFadeOutControlBar()
+        delegate?.bmProgressSliderValueChanged()
     }
     
     @objc fileprivate func progressSliderTouchEnded(_ sender: UISlider)  {
@@ -410,13 +427,19 @@ open class BMPlayer: UIView {
         
         if isPlayToTheEnd {
             isPlayToTheEnd = false
+            controlView.showLoader()
             playerLayer?.seekToTime(target, completionHandler: {
                 self.play()
-                self.play()
+                self.delegate?.bmProgressSliderTouchEnded()
+                self.controlView.playerPlayButton?.isEnabled = true
             })
         } else {
+            controlView.showLoader()
             playerLayer?.seekToTime(target, completionHandler: {
                 self.autoPlay()
+                self.controlView.hideLoader()
+                self.delegate?.bmProgressSliderTouchEnded()
+                self.controlView.playerPlayButton?.isEnabled = true
             })
         }
     }
@@ -457,21 +480,23 @@ open class BMPlayer: UIView {
     
     @objc fileprivate func replayButtonPressed() {
         playerLayer?.seekToTime(0, completionHandler: {
-            
+            self.play()
+            NotificationCenter.default.post(name: NSNotification.Name(rawValue: "ClickBMPlayerPlayButtonNotify"), object: true)
         })
-        self.play()
     }
     
-    @objc fileprivate func playButtonPressed(_ button: UIButton) {        
-        NotificationCenter.default.post(name: NSNotification.Name(rawValue: "ClickBMPlayerPlayButtonNotify"), object: button.isSelected)
+    @objc fileprivate func playButtonPressed(_ button: UIButton) {
+        
         if button.isSelected {
             self.pause()
+            NotificationCenter.default.post(name: NSNotification.Name(rawValue: "ClickBMPlayerPlayButtonNotify"), object: false)
         } else {
             if isPlayToTheEnd {
-                isPlayToTheEnd = false
                 replayButtonPressed()
+            }else {
+                self.play()
+                NotificationCenter.default.post(name: NSNotification.Name(rawValue: "ClickBMPlayerPlayButtonNotify"), object: true)
             }
-            self.play()
         }
     }
     
@@ -607,6 +632,7 @@ open class BMPlayer: UIView {
 }
 
 extension BMPlayer: BMPlayerLayerViewDelegate {
+    
     public func bmPlayer(player: BMPlayerLayerView, playerIsPlaying playing: Bool) {
         playStateDidChanged()
         delegate?.bmPlayer(player: self, playerIsPlaying: playing)
@@ -621,19 +647,24 @@ extension BMPlayer: BMPlayerLayerViewDelegate {
     }
     
     public func bmPlayer(player: BMPlayerLayerView, playerStateDidChange state: BMPlayerState) {
+        
         BMPlayerManager.shared.log("playerStateDidChange - \(state)")
         delegate?.bmPlayer(player: self, playerStateDidChange: state)
         
+        controlView.showLoader()
         switch state {
         case BMPlayerState.readyToPlay:
             if shouldSeekTo != 0 {
                 playerLayer?.seekToTime(shouldSeekTo, completionHandler: {
-                    
+                    self.controlView.hideLoader()
+                    self.play()
                 })
                 shouldSeekTo = 0
+            }else{
+                shouldSeekTo = 0
+                self.controlView.hideLoader()
+                self.play()
             }
-            controlView.hideLoader()
-            self.play()
         case BMPlayerState.buffering:
             cancelAutoFadeOutControlBar()
             controlView.showLoader()
