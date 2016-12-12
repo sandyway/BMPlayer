@@ -356,6 +356,7 @@ open class BMPlayer: UIView {
             // 比如水平移动结束时，要快进到指定位置，如果这里没有判断，当我们调节音量完之后，会出现屏幕跳动的bug
             switch (self.panDirection) {
             case BMPanDirection.horizontal:
+                delegate?.bmProgressSliderTouchEnded()
                 controlView.hideSeekToView()
                 isSliderSliding = false
                 if isPlayToTheEnd {
@@ -404,6 +405,8 @@ open class BMPlayer: UIView {
             controlView.playerTimeSlider?.value      = Float(sumTime / totalDuration)
             controlView.playerCurrentTimeLabel?.text       = targetTime
             controlView.showSeekToView(sumTime, isAdd: value > 0)
+            
+            delegate?.bmProgressSliderTouchBegan()
         }
     }
     
@@ -685,6 +688,7 @@ extension BMPlayer: BMPlayerLayerViewDelegate {
         delegate?.bmPlayer(player: self, playTimeDidChange: currentTime, totalTime: totalTime)
         self.currentPosition = currentTime
         totalDuration = totalTime
+        
         if isSliderSliding {
             return
         }
