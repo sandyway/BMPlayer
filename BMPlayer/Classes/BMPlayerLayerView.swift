@@ -246,6 +246,8 @@ open class BMPlayerLayerView: UIView {
         
         self.timer  = Timer.scheduledTimer(timeInterval: 1.0, target: self, selector: #selector(playerTimerAction), userInfo: nil, repeats: true)
         
+        RunLoop.current.add(self.timer!, forMode: RunLoopMode.commonModes)
+        
         self.setNeedsLayout()
         self.layoutIfNeeded()
     }
