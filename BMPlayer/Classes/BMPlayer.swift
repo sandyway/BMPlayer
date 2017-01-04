@@ -266,7 +266,7 @@ open class BMPlayer: UIView {
         if isSliderSliding { return }
         if let player = playerLayer {
             if player.isPlaying {
-                autoFadeOutControlBar()
+//                autoFadeOutControlBar()
                 controlView.playerPlayButton?.isSelected = true
             } else {
                 controlView.playerPlayButton?.isSelected = false
