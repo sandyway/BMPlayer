@@ -308,7 +308,7 @@ open class BMPlayer: UIView {
     
     @objc fileprivate func panDirection(_ pan: UIPanGestureRecognizer) {
         
-        //        if !isPlaying {return}
+        if !isPlaying {return}
         
         // 根据在view上Pan的位置，确定是调音量还是亮度
         let locationPoint = pan.location(in: self)
@@ -692,6 +692,12 @@ extension BMPlayer: BMPlayerLayerViewDelegate {
         if isSliderSliding {
             return
         }
+        
+        if currentTime >= totalTime {
+            player.pause()
+            bmPlayer(player: player, playerStateDidChange: BMPlayerState.playedToTheEnd)
+        }
+        
         controlView.playerCurrentTimeLabel?.text = formatSecondsToString(currentTime)
         controlView.playerTotalTimeLabel?.text = formatSecondsToString(totalTime)
         
