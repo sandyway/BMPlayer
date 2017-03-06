@@ -278,9 +278,9 @@ open class BMPlayer: UIView {
     @objc fileprivate func hideControlViewAnimated() {
         UIView.animate(withDuration: BMPlayerControlBarAutoFadeOutTimeInterval, animations: {
             self.controlView.hidePlayerUIComponents()
-            if self.isFullScreen {
+//            if self.isFullScreen {
                 UIApplication.shared.setStatusBarHidden(true, with: .fade)
-            }
+//            }
         }, completion: { (_) in
             self.isMaskShowing = false
         })
