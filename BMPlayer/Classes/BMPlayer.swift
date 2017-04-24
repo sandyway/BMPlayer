@@ -47,6 +47,9 @@ public protocol BMPlayerDelegate : class {
     func bmProgressSliderValueChanged()
     func bmPlayerPlaying()
     func bmPlayerDidPause()
+    
+    func bmPlayerShowControlView()
+    func bmPlayerHideControlView()
 }
 
 open class BMPlayer: UIView {
@@ -117,7 +120,10 @@ open class BMPlayer: UIView {
     fileprivate var isSlowed        = false
     fileprivate var isMirrored      = false
     fileprivate var isPlayToTheEnd  = false {
-        didSet { controlView.playerReplayButton?.isHidden = true }
+        didSet {
+            controlView.playerReplayButton?.isHidden = true
+            controlView.hideSeekToView()
+        }
     }
     
     //视频画面比例
@@ -195,6 +201,7 @@ open class BMPlayer: UIView {
         isPlayToTheEnd = false
         self.controlView.hideLoader()
         delegate?.bmPlayerPlaying()
+        autoFadeOutControlBar()
     }
     
     /**
@@ -214,12 +221,13 @@ open class BMPlayer: UIView {
      
      - parameter to: target time
      */
-    open func seek(_ to:TimeInterval) {
+    open func seek(_ to:TimeInterval,complete:(()->())? = nil) {
         self.shouldSeekTo = to
         controlView.showLoader()
         playerLayer?.seekToTime(to, completionHandler: {
             self.shouldSeekTo = 0
             self.controlView.hideLoader()
+            complete?()
         })
     }
     
@@ -227,7 +235,11 @@ open class BMPlayer: UIView {
      开始自动隐藏UI倒计时
      */
     open func autoFadeOutControlBar() {
+        
         NSObject.cancelPreviousPerformRequests(withTarget: self, selector: #selector(hideControlViewAnimated), object: nil)
+        if self.playerToDisAppear {
+            return
+        }
         self.perform(#selector(hideControlViewAnimated), with: nil, afterDelay: BMPlayerAnimationTimeInterval)
     }
     
@@ -274,33 +286,45 @@ open class BMPlayer: UIView {
         }
     }
     
-    
+    open var playerToDisAppear = false
     @objc fileprivate func hideControlViewAnimated() {
+        
+        if !isMaskShowing {return}
+        
+        UIApplication.shared.setStatusBarHidden(true, with: .fade)
+        
         UIView.animate(withDuration: BMPlayerControlBarAutoFadeOutTimeInterval, animations: {
+
             self.controlView.hidePlayerUIComponents()
-//            if self.isFullScreen {
-                UIApplication.shared.setStatusBarHidden(true, with: .fade)
-//            }
+
         }, completion: { (_) in
             self.isMaskShowing = false
         })
+        
+        delegate?.bmPlayerHideControlView()
     }
     
     @objc fileprivate func showControlViewAnimated() {
+        
+        if isMaskShowing {return}
+        
+        UIApplication.shared.setStatusBarHidden(false, with: .none)
+        
         UIView.animate(withDuration: BMPlayerControlBarAutoFadeOutTimeInterval, animations: {
             self.controlView.showPlayerUIComponents()
-            UIApplication.shared.setStatusBarHidden(false, with: .fade)
         }, completion: { (_) in
             self.autoFadeOutControlBar()
             self.isMaskShowing = true
         })
+        
+        delegate?.bmPlayerShowControlView()
     }
     
     @objc fileprivate func tapGestureTapped(_ sender: UIGestureRecognizer) {
         
         if isMaskShowing {
             hideControlViewAnimated()
-            autoFadeOutControlBar()
+//            autoFadeOutControlBar()
         } else {
             showControlViewAnimated()
         }
@@ -350,6 +374,13 @@ open class BMPlayer: UIView {
                 self.horizontalMoved(velocityPoint.x)
             case BMPanDirection.vertical:
                 self.verticalMoved(velocityPoint.y)
+            }
+        case UIGestureRecognizerState.cancelled:
+            switch self.panDirection {
+            case BMPanDirection.horizontal:
+                controlView.hideSeekToView()
+            default:
+                break
             }
         case UIGestureRecognizerState.ended:
             // 移动结束也需要判断垂直或者平移
