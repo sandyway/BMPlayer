@@ -165,6 +165,9 @@ class BMPlayerControlView: UIView, BMPlayerCustomControlView {
     }
     
     func showLoader() {
+        if let delegate = delegate as? BMPlayer, delegate.isAirPlaying() {
+            return
+        }
         loadingIndector.isHidden = false
         loadingIndector.startAnimating()
     }
