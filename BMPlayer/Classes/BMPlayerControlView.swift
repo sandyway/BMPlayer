@@ -168,12 +168,18 @@ class BMPlayerControlView: UIView, BMPlayerCustomControlView {
         if let delegate = delegate as? BMPlayer, delegate.isAirPlaying() {
             return
         }
-        loadingIndector.isHidden = false
-        loadingIndector.startAnimating()
+        if loadingIndector.isHidden != false {
+            loadingIndector.isHidden = false
+            loadingIndector.startAnimating()
+        }
     }
     
     func hideLoader() {
-        loadingIndector.isHidden = true
+        if loadingIndector.isHidden != true {
+            DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 0.2) {
+                self.loadingIndector.isHidden = true
+            }
+        }
     }
     
     func showSeekToView(_ toSecound: TimeInterval, isAdd: Bool) {
@@ -181,7 +187,7 @@ class BMPlayerControlView: UIView, BMPlayerCustomControlView {
         let Min = Int(toSecound / 60)
         let Sec = Int(toSecound.truncatingRemainder(dividingBy: 60))
         seekToLabel.text    = String(format: "%02d:%02d", Min, Sec)
-        let rotate = isAdd ? 0 : CGFloat(M_PI)
+        let rotate = isAdd ? 0 : CGFloat.pi
         seekToViewImage.transform = CGAffineTransform(rotationAngle: rotate)
     }
     

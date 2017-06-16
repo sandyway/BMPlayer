@@ -803,8 +803,14 @@ open class BMPlayer: UIView {
     fileprivate func hideLoader() {
         
         controlView.hideLoader()
-        controlView.playerPlayButton?.isEnabled = true
+        
+        if controlView.playerPlayButton?.isEnabled != true {
+            DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 0.2) {
+                self.controlView.playerPlayButton?.isEnabled = true
+            }
+        }
     }
+    
     var lastCurrentTime:TimeInterval = 0
 }
 
