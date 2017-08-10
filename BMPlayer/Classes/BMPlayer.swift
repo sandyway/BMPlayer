@@ -10,6 +10,19 @@ import UIKit
 import SnapKit
 import MediaPlayer
 
+extension Double {
+    func toInt() -> Int? {
+        let minInt = Double(Int.min)
+        let maxInt = Double(Int.max)
+        
+        guard case minInt ... maxInt = self else {
+            return nil
+        }
+        
+        return Int(self)
+    }
+}
+
 public enum BMPlayerState {
     case notSetURL      // 未设置URL
     case readyToPlay    // 可以播放
@@ -312,7 +325,7 @@ open class BMPlayer: UIView {
         
         if !isMaskShowing {return}
         
-        UIApplication.shared.setStatusBarHidden(true, with: .fade)
+//        UIApplication.shared.setStatusBarHidden(true, with: .fade)
         
         UIView.animate(withDuration: BMPlayerControlBarAutoFadeOutTimeInterval, animations: {
 
@@ -658,11 +671,10 @@ open class BMPlayer: UIView {
         self.init(customControllView:nil)
     }
     
-    
-    
-    fileprivate func formatSecondsToString(_ secounds: TimeInterval) -> String {
-        let Min = Int(secounds / 60)
-        let Sec = Int(secounds.truncatingRemainder(dividingBy: 60))
+    fileprivate func formatSecondsToString(_ seconds: TimeInterval) -> String {
+        guard let _ = seconds.toInt() else { return "00:00" }
+        let Min = Int(seconds / 60)
+        let Sec = Int(seconds.truncatingRemainder(dividingBy: 60))
         return String(format: "%02d:%02d", Min, Sec)
     }
     
