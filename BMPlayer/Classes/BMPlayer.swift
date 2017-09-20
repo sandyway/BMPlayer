@@ -34,6 +34,7 @@ public enum BMPlayerState {
 
 /// 枚举值，包含水平移动方向和垂直移动方向
 enum BMPanDirection: Int {
+    
     case horizontal = 0
     case vertical   = 1
 }

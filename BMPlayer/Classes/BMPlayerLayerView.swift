@@ -420,6 +420,7 @@ open class BMPlayerLayerView: UIView {
                     if item.status == AVPlayerItemStatus.readyToPlay {
                         self.state = .readyToPlay
                         print("status: readyToPlay")
+                        play()
                     }else if item.status == AVPlayerItemStatus.failed {
                         self.state = .error
                         print("status: failed")

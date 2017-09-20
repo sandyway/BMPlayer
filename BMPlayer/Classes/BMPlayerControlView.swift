@@ -119,8 +119,8 @@ class BMPlayerControlView: UIView, BMPlayerCustomControlView {
                 self.mirrorButton.isHidden = false
                 
                 fullScreenButton.snp.remakeConstraints { (make) in
-                    make.width.equalTo(50)
-                    make.height.equalTo(50)
+                    make.width.equalTo(56)
+                    make.height.equalTo(56)
                     make.centerY.equalTo(currentTimeLabel)
                     make.left.equalTo(slowButton.snp.right)
                     make.right.equalTo(bottomMaskView.snp.right)
@@ -147,8 +147,8 @@ class BMPlayerControlView: UIView, BMPlayerCustomControlView {
             self.mirrorButton.isHidden = true
             fullScreenButton.setImage(BMImageResourcePath("BMPlayer_fullscreen"), for: UIControlState())
             fullScreenButton.snp.remakeConstraints { (make) in
-                make.width.equalTo(50)
-                make.height.equalTo(50)
+                make.width.equalTo(56)
+                make.height.equalTo(56)
                 make.centerY.equalTo(currentTimeLabel)
                 make.left.equalTo(totalTimeLabel.snp.right)
                 make.right.equalTo(bottomMaskView.snp.right)
@@ -478,8 +478,8 @@ class BMPlayerControlView: UIView, BMPlayerCustomControlView {
         }
         
         fullScreenButton.snp.makeConstraints { (make) in
-            make.width.equalTo(50)
-            make.height.equalTo(50)
+            make.width.equalTo(56)
+            make.height.equalTo(56)
             make.centerY.equalTo(currentTimeLabel)
             make.left.equalTo(totalTimeLabel.snp.right)
             make.right.equalTo(bottomMaskView.snp.right)
