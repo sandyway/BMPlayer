@@ -53,6 +53,8 @@ public protocol BMPlayerCustomControlView  {
     var playerSlowButton        : UIButton? { get }
     var playerMirrorButton      : UIButton? { get }
     
+    var playerMaskImageView     : UIImageView? { get }
+    
     var getView : UIView { get }
     
     /**

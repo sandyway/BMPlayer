@@ -29,6 +29,8 @@ class BMPlayerControlView: UIView, BMPlayerCustomControlView {
     var playerSlowButton        : UIButton? { get { return  slowButton } }
     var playerMirrorButton      : UIButton? { get { return  mirrorButton } }
     
+    var playerMaskImageView     : UIImageView? { get { return  maskImageView } }
+    
     var getView: UIView { return self }
     
     /// 主体
@@ -73,6 +75,10 @@ class BMPlayerControlView: UIView, BMPlayerCustomControlView {
     fileprivate var isSelectecDefitionViewOpened = false
     
     var isFullScreen = false
+    
+    lazy var isiPhoneX:Bool = {
+        return UIScreen.main.bounds.size.equalTo(CGSize(width: 375, height: 812))
+    }()
     
     // MARK: - funcitons
     func showPlayerUIComponents() {
@@ -126,7 +132,9 @@ class BMPlayerControlView: UIView, BMPlayerCustomControlView {
                     make.right.equalTo(bottomMaskView.snp.right)
                 }
             }
-            fullScreenButton.setImage(BMImageResourcePath("BMPlayer_portialscreen"), for: UIControlState())
+            
+            
+//            fullScreenButton.setImage(BMImageResourcePath("BMPlayer_portialscreen"), for: UIControlState())
             ratioButton.isHidden = false
             chooseDefitionView.isHidden = true
             if BMPlayerConf.topBarShowInCase.rawValue == 2 {
@@ -134,7 +142,26 @@ class BMPlayerControlView: UIView, BMPlayerCustomControlView {
             } else {
                 topMaskView.isHidden = false
             }
+            
+            if isiPhoneX {
+                
+                bottomMaskView.snp.remakeConstraints { (make) in
+                    make.left.equalTo(mainMaskView).offset(88)
+                    make.right.equalTo(mainMaskView).offset(-88)
+                    make.bottom.equalTo(mainMaskView)
+                    make.height.equalTo(70)
+                }
+//                bottomMaskView.backgroundColor = UIColor.red
+            }else {
+//                bottomMaskView.backgroundColor = UIColor.blue
+                bottomMaskView.snp.remakeConstraints { (make) in
+                    make.bottom.left.right.equalTo(mainMaskView)
+                    make.height.equalTo(50)
+                }
+            }
+            
         } else {
+//            bottomMaskView.backgroundColor = UIColor.yellow
             if BMPlayerConf.topBarShowInCase.rawValue >= 1 {
                 topMaskView.isHidden = true
             } else {
@@ -152,6 +179,11 @@ class BMPlayerControlView: UIView, BMPlayerCustomControlView {
                 make.centerY.equalTo(currentTimeLabel)
                 make.left.equalTo(totalTimeLabel.snp.right)
                 make.right.equalTo(bottomMaskView.snp.right)
+            }
+            
+            bottomMaskView.snp.remakeConstraints { (make) in
+                make.bottom.left.right.equalTo(mainMaskView)
+                make.height.equalTo(50)
             }
         }
         
@@ -282,13 +314,15 @@ class BMPlayerControlView: UIView, BMPlayerCustomControlView {
     }
     
     fileprivate func initUI() {
+        // bg image view
+        addSubview(maskImageView)
+        maskImageView.contentMode = UIViewContentMode.scaleAspectFill
         // 主体
         addSubview(mainMaskView)
         mainMaskView.addSubview(topMaskView)
         mainMaskView.addSubview(bottomMaskView)
-        mainMaskView.insertSubview(maskImageView, at: 0)
-        
         mainMaskView.backgroundColor = UIColor ( red: 0.0, green: 0.0, blue: 0.0, alpha: 0.4 )
+        
         // 顶部
         topMaskView.addSubview(backButton)
         topMaskView.addSubview(titleLabel)
@@ -437,7 +471,8 @@ class BMPlayerControlView: UIView, BMPlayerCustomControlView {
         playButton.snp.makeConstraints { (make) in
             make.width.equalTo(50)
             make.height.equalTo(50)
-            make.left.bottom.equalTo(bottomMaskView)
+            make.left.equalTo(bottomMaskView)
+            make.top.equalTo(bottomMaskView)
         }
         
         currentTimeLabel.snp.makeConstraints { (make) in

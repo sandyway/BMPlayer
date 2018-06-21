@@ -56,6 +56,7 @@ public protocol BMPlayerDelegate : class {
     func bmPlayer(player: BMPlayer ,loadedTimeDidChange loadedDuration: TimeInterval, totalDuration: TimeInterval)
     func bmPlayer(player: BMPlayer ,playTimeDidChange currentTime : TimeInterval, totalTime: TimeInterval)
     func bmPlayer(player: BMPlayer ,playerIsPlaying playing: Bool)
+    
     func bmProgressSliderTouchBegan()
     func bmProgressSliderTouchEnded(target: Double)
     func bmProgressSliderValueChanged()
@@ -64,6 +65,8 @@ public protocol BMPlayerDelegate : class {
     
     func bmPlayerShowControlView()
     func bmPlayerHideControlView()
+    
+//    func bmPlayerClickFullScreen()
 }
 
 open class BMPlayer: UIView {    
@@ -78,7 +81,7 @@ open class BMPlayer: UIView {
     open var panGesture: UIPanGestureRecognizer!
     
     /// AVLayerVideoGravityType
-    open var videoGravity = AVLayerVideoGravityResizeAspect {
+    open var videoGravity = AVLayerVideoGravity.resizeAspect {
         didSet {
             self.playerLayer?.videoGravity = videoGravity
         }
@@ -189,7 +192,7 @@ open class BMPlayer: UIView {
             playerLayer?.videoURL   = videoItem.resource[currentDefinition].playURL
             isURLSet                = true
             if isAirPlaying() {
-                playerLayer?.pause()
+                pauseDelay()
             }
         } else {
             controlView.showCoverWithLink(item.cover)
@@ -201,7 +204,7 @@ open class BMPlayer: UIView {
      */
     open func autoPlay() {
         if !isPauseByUser && isURLSet {
-            self.play()
+            self.playDelay()
         }
     }
     
@@ -209,6 +212,19 @@ open class BMPlayer: UIView {
      手动播放
      */
     open func play() {
+        playDelay()
+    }
+    
+    /**
+     暂停
+     
+     - parameter allowAutoPlay: 是否允许自动播放，默认不允许，若允许则在调用autoPlay的情况下开始播放。否则autoPlay不会进行播放。
+     */
+    open func pause(allowAutoPlay allow: Bool = false) {
+        pauseDelay()
+    }
+    
+    @objc func basePlay() {
         if !isURLSet {
             if playerItemType == BMPlayerItemType.bmPlayerItem {
                 playerLayer?.videoURL       = videoItem.resource[currentDefinition].playURL
@@ -222,27 +238,45 @@ open class BMPlayer: UIView {
         controlView.playerPlayButton?.isSelected = true
         if !isAirPlaying() {
             playerLayer?.play()
-        }
+                                                                                  }
         
         isPauseByUser = false
         isPlayToTheEnd = false
-//        self.hideLoader()
+        //        self.hideLoader()
         delegate?.bmPlayerPlaying()
         autoFadeOutControlBar()
     }
     
-    /**
-     暂停
-     
-     - parameter allowAutoPlay: 是否允许自动播放，默认不允许，若允许则在调用autoPlay的情况下开始播放。否则autoPlay不会进行播放。
-     */
-    open func pause(allowAutoPlay allow: Bool = false) {
+    @objc func basePause() {
+        
         controlView.playerPlayButton?.isSelected = false
         if !isAirPlaying() {
             playerLayer?.pause()
         }
-        isPauseByUser = !allow
+        isPauseByUser = true
         delegate?.bmPlayerDidPause()
+    }
+    
+    func playDelay(_ delay: Double = 0) {
+        
+        if delay == 0 {
+            basePlay()
+            return
+        }
+        NSObject.cancelPreviousPerformRequests(withTarget: self, selector: #selector(BMPlayer.basePause), object: nil)
+        NSObject.cancelPreviousPerformRequests(withTarget: self, selector: #selector(BMPlayer.basePlay), object: nil)
+        perform(#selector(BMPlayer.basePlay), with: nil, afterDelay: delay, inModes: [RunLoopMode.commonModes])
+    }
+    
+    func pauseDelay(_ delay: Double = 0) {
+
+        if delay == 0 {
+            basePause()
+            return
+        }
+        NSObject.cancelPreviousPerformRequests(withTarget: self, selector: #selector(BMPlayer.basePause), object: nil)
+        NSObject.cancelPreviousPerformRequests(withTarget: self, selector: #selector(BMPlayer.basePlay), object: nil)
+        perform(#selector(BMPlayer.basePause), with: nil, afterDelay: delay, inModes: [RunLoopMode.commonModes])
     }
     
     /**
@@ -304,6 +338,22 @@ open class BMPlayer: UIView {
      准备销毁，适用于手动隐藏等场景
      */
     open func prepareToDealloc() {
+        
+        // 还原
+        isPlayToTheEnd = false
+        isSliderSliding = false
+        totalDuration = 0
+        controlView.playerProgressView?.setProgress(0, animated: true)
+        shouldSeekTo = 0
+        isPauseByUser = false
+        lastCurrentTime = 0
+        controlView.playerCurrentTimeLabel?.text = formatSecondsToString(0)
+        controlView.playerTotalTimeLabel?.text = formatSecondsToString(0)
+        controlView.playerTimeSlider?.value = 0
+        currentPosition = 0
+        // 外界也要还原
+        delegate?.bmPlayer(player: self, playTimeDidChange: 0, totalTime: 0)
+        
         playerLayer?.prepareToDeinit()
     }
     
@@ -431,7 +481,7 @@ open class BMPlayer: UIView {
                         showLoader()
                         self.pause(allowAutoPlay: true)
                         playerLayer?.seekToTime(self.sumTime, completionHandler: {
-                            self.play()
+                            self.playDelay()
                             self.hideLoader()
                         })
                     }
@@ -441,11 +491,11 @@ open class BMPlayer: UIView {
                         showLoader()
                         self.pause(allowAutoPlay: true)
                         playerLayer?.seekToTime(self.sumTime, completionHandler: {
-                            self.autoPlay()
+                            self.playDelay()
                             self.hideLoader()
                         })
                     }else {
-                        self.autoPlay()
+                        self.playDelay()
                     }
                 }
                 // 把sumTime滞空，不然会越加越多
@@ -490,6 +540,10 @@ open class BMPlayer: UIView {
     
     @objc fileprivate func progressSliderTouchBegan(_ sender: UISlider)  {
         
+        if !isAirPlaying() {
+            self.pause(allowAutoPlay: true)
+        }
+        
         playerLayer?.onTimeSliderBegan()
         isSliderSliding = true
         delegate?.bmProgressSliderTouchBegan()
@@ -497,9 +551,6 @@ open class BMPlayer: UIView {
     }
     
     @objc fileprivate func progressSliderValueChanged(_ sender: UISlider)  {
-        if !isAirPlaying() {
-            self.pause(allowAutoPlay: true)
-        }
 
         cancelAutoFadeOutControlBar()
         delegate?.bmProgressSliderValueChanged()
@@ -515,12 +566,12 @@ open class BMPlayer: UIView {
             isPlayToTheEnd = false
             if !isAirPlaying() {
                 playerLayer?.seekToTime(target, completionHandler: {
-                    self.play()
+                    self.playDelay()
                     self.delegate?.bmProgressSliderTouchEnded(target: target)
                     self.hideLoader()
                 })
             }else {
-                self.play()
+                self.playDelay()
                 self.delegate?.bmProgressSliderTouchEnded(target: target)
                 self.hideLoader()
             }
@@ -528,7 +579,7 @@ open class BMPlayer: UIView {
         } else {
             let seekToCallback = { [weak self] in
                 guard let slf = self else { return }
-                slf.autoPlay()
+                slf.playDelay()
                 slf.delegate?.bmProgressSliderTouchEnded(target: target)
                 slf.controlView.playerPlayButton?.isEnabled = true
                 slf.hideLoader()
@@ -580,11 +631,11 @@ open class BMPlayer: UIView {
     @objc fileprivate func replayButtonPressed() {
         if !isAirPlaying() {
             playerLayer?.seekToTime(0, completionHandler: {
-                self.play()
+                self.playDelay()
                 NotificationCenter.default.post(name: NSNotification.Name(rawValue: "ClickBMPlayerPlayButtonNotify"), object: true)
             })
         }else {
-            self.play()
+            self.playDelay()
             NotificationCenter.default.post(name: NSNotification.Name(rawValue: "ClickBMPlayerPlayButtonNotify"), object: true)
         }
         
@@ -593,14 +644,14 @@ open class BMPlayer: UIView {
     @objc fileprivate func playButtonPressed(_ button: UIButton) {
         
         if button.isSelected {
-            self.pause()
+            self.pauseDelay()
             NotificationCenter.default.post(name: NSNotification.Name(rawValue: "ClickBMPlayerPlayButtonNotify"), object: false)
         } else {
             if isPlayToTheEnd {
                 isPlayToTheEnd = false
                 replayButtonPressed()
             }else {
-                self.play()
+                self.playDelay()
                 NotificationCenter.default.post(name: NSNotification.Name(rawValue: "ClickBMPlayerPlayButtonNotify"), object: true)
             }
         }
@@ -621,10 +672,12 @@ open class BMPlayer: UIView {
     }
     
     @objc fileprivate func fullScreenButtonPressed(_ button: UIButton?) {
+        
         if !isURLSet {
             //            self.play()
         }
         controlView.updateUI(!self.isFullScreen)
+        
         if isFullScreen {
             UIDevice.current.setValue(UIInterfaceOrientation.landscapeRight.rawValue, forKey: "orientation")
             UIDevice.current.setValue(UIInterfaceOrientation.portrait.rawValue, forKey: "orientation")
@@ -640,10 +693,11 @@ open class BMPlayer: UIView {
     
     // MARK: - 生命周期
     deinit {
-        playerLayer?.pause()
+        pauseDelay()
         playerLayer?.prepareToDeinit()
-        NotificationCenter.default.removeObserver(self, name: NSNotification.Name.UIApplicationDidChangeStatusBarOrientation, object: nil)
         NotificationCenter.default.removeObserver(self)
+        NotificationCenter.default.removeObserver(self, name: NSNotification.Name.UIApplicationDidChangeStatusBarOrientation, object: nil)
+        NSObject.cancelPreviousPerformRequests(withTarget: self)
     }
     
     
@@ -702,7 +756,7 @@ open class BMPlayer: UIView {
         panGesture = UIPanGestureRecognizer(target: self, action: #selector(self.panDirection(_:)))
         self.addGestureRecognizer(panGesture)
         
-        oberveMPVolumeViewWirelessRouteActiveDidChange()
+//        oberveMPVolumeViewWirelessRouteActiveDidChange()
     }
     
     func oberveMPVolumeViewWirelessRouteActiveDidChange() {
@@ -718,47 +772,46 @@ open class BMPlayer: UIView {
         let airPlayview = UIView(frame: CGRect.zero)
         if let playerLayer = self.playerLayer {
             self.insertSubview(airPlayview, aboveSubview: playerLayer)
+            airPlayview.snp.makeConstraints{ (make) in
+                make.edges.equalTo(self)
+                //            make.centerY.equalToSuperview().offset(-20)
+            }
+            let airPlayimageView = UIImageView(image: UIImage(named: "Airplay"))
+            airPlayview.addSubview(airPlayimageView)
+            airPlayimageView.snp.makeConstraints{ (make) in
+                make.center.equalToSuperview()
+                make.width.equalTo(55)
+                make.height.equalTo(42)
+            }
+            self.airPlaylbl.textColor = UIColor(red: 90/255, green: 99/255, blue: 120/255, alpha: 1)
+            self.airPlaylbl.font = UIFont.systemFont(ofSize: 12)
+            airPlayview.addSubview(self.airPlaylbl)
+            self.airPlaylbl.snp.makeConstraints{ (make) in
+                make.top.equalTo(airPlayimageView.snp.bottom).offset(10)
+                make.centerX.equalToSuperview()
+            }
         }
-        airPlayview.snp.makeConstraints{ (make) in
-            make.centerX.equalToSuperview()
-            make.centerY.equalToSuperview().offset(-20)
-        }
-        let airPlayimageView = UIImageView(image: UIImage(named: "Airplay"))
-        airPlayview.addSubview(airPlayimageView)
-        airPlayimageView.snp.makeConstraints{ (make) in
-            make.center.equalToSuperview()
-            make.width.equalTo(55)
-            make.height.equalTo(42)
-        }
-        self.airPlaylbl.textColor = UIColor(red: 90/255, green: 99/255, blue: 120/255, alpha: 1)
-        self.airPlaylbl.font = UIFont.systemFont(ofSize: 12)
-        airPlayview.addSubview(self.airPlaylbl)
-        self.airPlaylbl.snp.makeConstraints{ (make) in
-            make.top.equalTo(airPlayimageView.snp.bottom).offset(10)
-            make.centerX.equalToSuperview()
-        }
-        airPlayview.isHidden = true
         return airPlayview
     }()
     
-    func handleSMPVolumeViewWirelessRouteActiveDidChangeNotification(notification: Notification) {
-        if let volumeView = notification.object as? MPVolumeView {
-            if volumeView.isWirelessRouteActive {
-                let deviceName = "AirPlay"
-//                for outputPort in AVAudioSession.sharedInstance().currentRoute.outputs {
-//                    if outputPort.portType == "AirPlay" {
-//                        deviceName = outputPort.portName
+    @objc func handleSMPVolumeViewWirelessRouteActiveDidChangeNotification(notification: Notification) {
+//        if let volumeView = notification.object as? MPVolumeView {
+////            if volumeView.isWirelessRouteActive {
+////                let deviceName = "AirPlay"
+////                for outputPort in AVAudioSession.sharedInstance().currentRoute.outputs {
+////                    if outputPort.portType == "AirPlay" {
+////                        deviceName = outputPort.portName
 ////                        print(outputPort.portName)
-//                    }
-//                }
-                airPlayView.isHidden = false
-                airPlaylbl.text = "此视频正在“\(deviceName)”上播放。"
-//                playerLayer?.layer.contents = UIImage(named: "Category0")?.cgImage
-            }else {
-//                playerLayer?.layer.contents = nil
-                airPlayView.isHidden = true
-            }
-        }
+////                    }
+////                }
+//                airPlayView.isHidden = false
+//                airPlaylbl.text = "此视频正在“\(deviceName)”上播放。"
+////                playerLayer?.layer.contents = UIImage(named: "Category0")?.cgImage
+//            }else {
+////                playerLayer?.layer.contents = nil
+//                airPlayView.isHidden = true
+//            }
+//        }
     }
     
     fileprivate func initUIData() {
@@ -803,7 +856,7 @@ open class BMPlayer: UIView {
         }
         playerLayer!.delegate = self
         showLoader()
-        airPlayView.isHidden = airPlayView.isHidden
+        airPlayView.isHidden = true
         self.layoutIfNeeded()        
     }
     
@@ -830,7 +883,13 @@ open class BMPlayer: UIView {
 extension BMPlayer: BMPlayerLayerViewDelegate {
     
     public func bmPlayer(player: BMPlayerLayerView, playerIsPlaying playing: Bool) {
-//        playStateDidChanged()
+
+        if isPlayToTheEnd {
+            controlView.playerPlayButton?.isSelected = false
+            delegate?.bmPlayer(player: self, playerIsPlaying: false)
+            return
+        }
+        
         if !isSliderSliding {
             controlView.playerPlayButton?.isSelected = isPlaying
         }
@@ -848,40 +907,51 @@ extension BMPlayer: BMPlayerLayerViewDelegate {
     public func bmPlayer(player: BMPlayerLayerView, playerStateDidChange state: BMPlayerState) {
         
         BMPlayerManager.shared.log("playerStateDidChange - \(state)")
-        delegate?.bmPlayer(player: self, playerStateDidChange: state)
+        
+        if isPauseByUser || isSliderSliding {return}
+        
         switch state {
         case BMPlayerState.readyToPlay:
-            print("")
+            
             if shouldSeekTo != 0 {
                 playerLayer?.seekToTime(shouldSeekTo, completionHandler: {
-                    self.play()
+                    self.shouldSeekTo = 0
+                    self.playDelay()
+                    self.hideLoader()
                 })
-                shouldSeekTo = 0
             }else{
                 shouldSeekTo = 0
-                self.play()
+                playDelay()
+                hideLoader()
             }
         case BMPlayerState.buffering:
             cancelAutoFadeOutControlBar()
 //            playStateDidChanged()
             showLoader()
-            self.pause()
+            // 表示不是人为暂停的
+            pauseDelay()
+            
+            isPauseByUser = false
+            
         case BMPlayerState.bufferFinished:
 //            playStateDidChanged()
 //            autoPlay()
 //            self.play()
 //            hideLoader()
-            if shouldSeekTo != 0 {
-                playerLayer?.seekToTime(shouldSeekTo, completionHandler: {
-                    self.shouldSeekTo = 0
-                    self.play()
-                    self.hideLoader()
-                })
-            }else{
-                shouldSeekTo = 0
-                self.play()
-                hideLoader()
-            }
+            
+//            if isPauseByUser || isSliderSliding {return}
+//
+//            if shouldSeekTo != 0 {
+//                playerLayer?.seekToTime(shouldSeekTo, completionHandler: {
+//                    self.shouldSeekTo = 0
+//                    self.playDelay()
+//                    self.hideLoader()
+//                })
+//            }else{
+//                shouldSeekTo = 0
+//                self.playDelay()
+//                hideLoader()
+//            }
             print("")
         case BMPlayerState.playedToTheEnd:
             
@@ -892,16 +962,21 @@ extension BMPlayer: BMPlayerLayerViewDelegate {
         default:
             break
         }
+        
+        delegate?.bmPlayer(player: self, playerStateDidChange: state)
     }
     
     public func bmPlayer(player: BMPlayerLayerView, playTimeDidChange currentTime: TimeInterval, totalTime: TimeInterval) {
 //        guard !isAirPlaying() else { return }
         BMPlayerManager.shared.log("playTimeDidChange - \(currentTime) - \(totalTime)")
-        delegate?.bmPlayer(player: self, playTimeDidChange: currentTime, totalTime: totalTime)
-        self.currentPosition = currentTime
-        totalDuration = totalTime
+        
+        controlView.playerTotalTimeLabel?.text = formatSecondsToString(totalTime)
         
         if isSliderSliding {
+            return
+        }
+        
+        if !playerLayer!.isPlayerPlaying {
             return
         }
         
@@ -912,16 +987,22 @@ extension BMPlayer: BMPlayerLayerViewDelegate {
         }
         lastCurrentTime = currentTime
         
-        if currentTime >= totalTime {
-            player.pause()
-            bmPlayer(player: player, playerStateDidChange: BMPlayerState.playedToTheEnd)
-            lastCurrentTime = 0
-        }
+        delegate?.bmPlayer(player: self, playTimeDidChange: currentTime, totalTime: totalTime)
+        self.currentPosition = currentTime
+        totalDuration = totalTime
         
         controlView.playerCurrentTimeLabel?.text = formatSecondsToString(currentTime)
         controlView.playerTotalTimeLabel?.text = formatSecondsToString(totalTime)
-        
         controlView.playerTimeSlider?.value    = Float(currentTime) / Float(totalTime)
+        
+        if currentTime >= totalTime{
+            
+            bmPlayer(player: player, playerStateDidChange: BMPlayerState.playedToTheEnd)
+            lastCurrentTime = 0
+            pauseDelay()
+//            print("120980310928190380")
+        }
+        
 //        controlView.playerPlayButton?.isSelected = true
     }
     
@@ -941,7 +1022,7 @@ extension BMPlayer: BMPlayerControlViewDelegate {
 }
 
 extension BMPlayer {
-    func upnpPositionChanged(_ notification: Notification) {
+    @objc func upnpPositionChanged(_ notification: Notification) {
         guard isAirPlaying() && playerLayer != nil else { return }
         let (curTime, duration) = notification.object as? (Float, Float) ?? (0.0, 0.0)
         currentPosition = TimeInterval(curTime)
@@ -950,7 +1031,7 @@ extension BMPlayer {
 //        let totalTimeStr = formatSecondsToString(Double(duration))
         DispatchQueue.main.async { [weak self] in
             guard let slf = self else { return }
-            slf.bmPlayer(player: slf.playerLayer!, playTimeDidChange: Double(curTime), totalTime: Double(duration))
+            slf.bmPlayer(player: slf.playerLayer!, playTimeDidChange: ceil(Double(curTime)), totalTime: floor(Double(duration)))
 //            slf.controlView.playerTimeSlider?.value = pos
 //            slf.controlView.playerCurrentTimeLabel?.text = curTimeStr
 //            slf.controlView.playerTotalTimeLabel?.text = totalTimeStr
@@ -995,7 +1076,7 @@ extension BMPlayer {
         if !isAirPlaying {
             playerLayer?.seekToTime(currentPosition, completionHandler: {
                 if isPlaying {
-                    self.play()
+                    self.playDelay()
                 }
             })
         }
