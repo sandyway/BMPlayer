@@ -210,7 +210,7 @@ open class BMPlayerLayerView: UIView {
     }
     
     open func onTimeSliderBegan() {
-        if self.player?.currentItem?.status == AVPlayerItemStatus.readyToPlay {
+        if self.player?.currentItem?.status == AVPlayerItem.Status.readyToPlay {
             self.timer?.fireDate = Date.distantFuture
         }
     }
@@ -219,9 +219,10 @@ open class BMPlayerLayerView: UIView {
         if secounds.isNaN {
             return
         }
-        if self.player?.currentItem?.status == AVPlayerItemStatus.readyToPlay {
-            let draggedTime = CMTimeMake(Int64(secounds), 1)
-            self.player!.seek(to: draggedTime, toleranceBefore: kCMTimeZero, toleranceAfter: kCMTimeZero, completionHandler: { (finished) in
+        if self.player?.currentItem?.status == AVPlayerItem.Status.readyToPlay {
+            
+            let draggedTime = CMTime(value: CMTimeValue(secounds), timescale: 1)
+            self.player!.seek(to: draggedTime, toleranceBefore: CMTime.zero, toleranceAfter: CMTime.zero, completionHandler: { (finished) in
                 completionHandler?()
 //                if self.playerItem?.isPlaybackLikelyToKeepUp ?? false {
 //                    self.state = .buffering
@@ -285,7 +286,7 @@ open class BMPlayerLayerView: UIView {
         
         self.timer  = Timer.scheduledTimer(timeInterval: 1.0, target: self, selector: #selector(playerTimerAction), userInfo: nil, repeats: true)
         
-        RunLoop.current.add(self.timer!, forMode: RunLoopMode.commonModes)
+        RunLoop.current.add(self.timer!, forMode: RunLoop.Mode.common)
         
 //        timeObserver = player?.addPeriodicTimeObserver(forInterval: CMTimeMake(1, 1), queue: DispatchQueue.main, using: {
 //            [weak self] (cmTime) in
@@ -407,13 +408,13 @@ open class BMPlayerLayerView: UIView {
     var active = true
     override init(frame: CGRect) {
         super.init(frame: frame)
-        
-        NotificationCenter.default.addObserver(forName: NSNotification.Name(rawValue: NSNotification.Name.UIApplicationDidEnterBackground.rawValue), object: nil, queue: nil) { [weak self](notification) in
+
+        NotificationCenter.default.addObserver(forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: nil) { [weak self](notification) in
             guard self != nil else { return }
             self!.active = true
         }
         
-        NotificationCenter.default.addObserver(forName: NSNotification.Name(rawValue: NSNotification.Name.UIApplicationWillEnterForeground.rawValue), object: nil, queue: nil) { [weak self](notification) in
+        NotificationCenter.default.addObserver(forName: UIApplication.willEnterForegroundNotification, object: nil, queue: nil) { [weak self](notification) in
             guard self != nil else { return }
             self!.active = false
         }
@@ -472,10 +473,10 @@ open class BMPlayerLayerView: UIView {
                 
                 if keyPath == "status" {
                     // 这个只会执行一次
-                    if item.status == AVPlayerItemStatus.readyToPlay {
+                    if item.status == AVPlayerItem.Status.readyToPlay {
 //                        self.state = .readyToPlay
 //                        resizePlayerLayer()
-                    }else if item.status == AVPlayerItemStatus.failed {
+                    }else if item.status == AVPlayerItem.Status.failed {
                         // "http://baobab.wdjcdn.com/1456317490140jiyiyuetai_x264.mp4"
                         // 会出错
                         self.state = .error
@@ -485,7 +486,7 @@ open class BMPlayerLayerView: UIView {
                     }
                 }
                 
-                if item.status == AVPlayerItemStatus.readyToPlay {
+                if item.status == AVPlayerItem.Status.readyToPlay {
                     
                     if keyPath == "loadedTimeRanges" {
                         // 计算缓冲进度,有缓冲进度不一定能播放

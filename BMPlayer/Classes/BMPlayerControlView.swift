@@ -40,7 +40,7 @@ class BMPlayerControlView: UIView, BMPlayerCustomControlView {
     var maskImageView   = UIImageView()
     
     /// 顶部
-    var backButton  = UIButton(type: UIButtonType.custom)
+    var backButton  = UIButton(type: UIButton.ButtonType.custom)
     var titleLabel  = UILabel()
     var chooseDefitionView = UIView()
     var ratioButton = UIButton(type: .custom)       //调整视频画面比例按钮 Added by toodoo
@@ -52,10 +52,10 @@ class BMPlayerControlView: UIView, BMPlayerCustomControlView {
     var timeSlider       = BMTimeSlider()
     var progressView     = UIProgressView()
     
-    var playButton       = UIButton(type: UIButtonType.custom)
-    var fullScreenButton = UIButton(type: UIButtonType.custom)
-    var slowButton       = UIButton(type: UIButtonType.custom)
-    var mirrorButton     = UIButton(type: UIButtonType.custom)
+    var playButton       = UIButton(type: UIButton.ButtonType.custom)
+    var fullScreenButton = UIButton(type: UIButton.ButtonType.custom)
+    var slowButton       = UIButton(type: UIButton.ButtonType.custom)
+    var mirrorButton     = UIButton(type: UIButton.ButtonType.custom)
     
     
     
@@ -66,7 +66,7 @@ class BMPlayerControlView: UIView, BMPlayerCustomControlView {
     var seekToViewImage  = UIImageView()
     var seekToLabel      = UILabel()
     
-    var centerButton     = UIButton(type: UIButtonType.custom)
+    var centerButton     = UIButton(type: UIButton.ButtonType.custom)
     
     var videoItems:[BMPlayerItemDefinitionProtocol] = []
     
@@ -106,13 +106,13 @@ class BMPlayerControlView: UIView, BMPlayerCustomControlView {
     func aspectRatioChanged(_ state:BMPlayerAspectRatio) {
         switch state {
         case .default:
-            ratioButton.setBackgroundImage(BMImageResourcePath("BMPlayer_ratio"), for: UIControlState())
+            ratioButton.setBackgroundImage(BMImageResourcePath("BMPlayer_ratio"), for: UIControl.State.normal)
             break
         case .sixteen2NINE:
-            ratioButton.setBackgroundImage(BMImageResourcePath("BMPlayer_169"), for: UIControlState())
+            ratioButton.setBackgroundImage(BMImageResourcePath("BMPlayer_169"), for: UIControl.State.normal)
             break
         case .four2THREE:
-            ratioButton.setBackgroundImage(BMImageResourcePath("BMPlayer_43"), for: UIControlState())
+            ratioButton.setBackgroundImage(BMImageResourcePath("BMPlayer_43"), for: UIControl.State.normal)
             break
         }
     }
@@ -172,7 +172,7 @@ class BMPlayerControlView: UIView, BMPlayerCustomControlView {
             
             self.slowButton.isHidden = true
             self.mirrorButton.isHidden = true
-            fullScreenButton.setImage(BMImageResourcePath("BMPlayer_fullscreen"), for: UIControlState())
+            fullScreenButton.setImage(BMImageResourcePath("BMPlayer_fullscreen"), for: UIControl.State.normal)
             fullScreenButton.snp.remakeConstraints { (make) in
                 make.width.equalTo(56)
                 make.height.equalTo(56)
@@ -260,9 +260,10 @@ class BMPlayerControlView: UIView, BMPlayerCustomControlView {
                 button.tag = i
             }
             
-            button.setTitle("\(items[button.tag].definitionName)", for: UIControlState())
+            button.setTitle("\(items[button.tag].definitionName)", for: UIControl.State.normal)
             chooseDefitionView.addSubview(button)
-            button.addTarget(self, action: #selector(self.onDefinitionSelected(_:)), for: UIControlEvents.touchUpInside)
+            button.addTarget(self, action: #selector(self.onDefinitionSelected(_:)), for:
+                UIControl.Event.touchUpInside)
             button.snp.makeConstraints({ (make) in
                 make.top.equalTo(chooseDefitionView.snp.top).offset(35 * i)
                 make.width.equalTo(50)
@@ -316,7 +317,7 @@ class BMPlayerControlView: UIView, BMPlayerCustomControlView {
     fileprivate func initUI() {
         // bg image view
         addSubview(maskImageView)
-        maskImageView.contentMode = UIViewContentMode.scaleAspectFill
+        maskImageView.contentMode = UIView.ContentMode.scaleAspectFill
         // 主体
         addSubview(mainMaskView)
         mainMaskView.addSubview(topMaskView)
@@ -329,8 +330,8 @@ class BMPlayerControlView: UIView, BMPlayerCustomControlView {
         topMaskView.addSubview(ratioButton)
         self.addSubview(chooseDefitionView)
         
-        backButton.setImage(BMImageResourcePath("BMPlayer_back"), for: UIControlState())
-        ratioButton.setBackgroundImage(BMImageResourcePath("BMPlayer_ratio"), for: UIControlState())
+        backButton.setImage(BMImageResourcePath("BMPlayer_back"), for: UIControl.State())
+        ratioButton.setBackgroundImage(BMImageResourcePath("BMPlayer_ratio"), for: UIControl.State())
         
         titleLabel.textColor = UIColor.white
         titleLabel.text      = "Hello World"
@@ -348,8 +349,8 @@ class BMPlayerControlView: UIView, BMPlayerCustomControlView {
         bottomMaskView.addSubview(mirrorButton)
         bottomMaskView.addSubview(slowButton)
         
-        playButton.setImage(BMImageResourcePath("BMPlayer_play"), for: UIControlState())
-        playButton.setImage(BMImageResourcePath("BMPlayer_pause"), for: UIControlState.selected)
+        playButton.setImage(BMImageResourcePath("BMPlayer_play"), for: UIControl.State())
+        playButton.setImage(BMImageResourcePath("BMPlayer_pause"), for: UIControl.State.selected)
         
         currentTimeLabel.textColor  = UIColor.white
         currentTimeLabel.font       = UIFont.systemFont(ofSize: 12)
@@ -364,7 +365,7 @@ class BMPlayerControlView: UIView, BMPlayerCustomControlView {
         timeSlider.maximumValue = 1.0
         timeSlider.minimumValue = 0.0
         timeSlider.value        = 0.0
-        timeSlider.setThumbImage(BMImageResourcePath("BMPlayer_slider_thumb"), for: UIControlState())
+        timeSlider.setThumbImage(BMImageResourcePath("BMPlayer_slider_thumb"), for: UIControl.State())
         
         timeSlider.maximumTrackTintColor = UIColor.clear
         timeSlider.minimumTrackTintColor = BMPlayerConf.tintColor
@@ -372,19 +373,19 @@ class BMPlayerControlView: UIView, BMPlayerCustomControlView {
         progressView.tintColor      = UIColor ( red: 1.0, green: 1.0, blue: 1.0, alpha: 0.6 )
         progressView.trackTintColor = UIColor ( red: 1.0, green: 1.0, blue: 1.0, alpha: 0.3 )
         
-        fullScreenButton.setImage(BMImageResourcePath("BMPlayer_fullscreen"), for: UIControlState())
+        fullScreenButton.setImage(BMImageResourcePath("BMPlayer_fullscreen"), for: UIControl.State())
         
         mirrorButton.layer.borderWidth = 1
         mirrorButton.layer.borderColor = UIColor(red: 204.0 / 255.0, green: 204.0 / 255.0, blue: 204.0 / 255.0, alpha: 1.0).cgColor
         mirrorButton.layer.cornerRadius = 2.0
-        mirrorButton.setTitle("镜像", for: UIControlState())
+        mirrorButton.setTitle("镜像", for: UIControl.State())
         mirrorButton.titleLabel?.font = UIFont.systemFont(ofSize: 14)
         mirrorButton.isHidden = true
         
         slowButton.layer.borderWidth = 1
         slowButton.layer.borderColor = UIColor(red: 204.0 / 255.0, green: 204.0 / 255.0, blue: 204.0 / 255.0, alpha: 1.0).cgColor
         slowButton.layer.cornerRadius = 2.0
-        slowButton.setTitle("慢放", for: UIControlState())
+        slowButton.setTitle("慢放", for: UIControl.State())
         slowButton.titleLabel?.font = UIFont.systemFont(ofSize: 14)
         mirrorButton.isHidden = true
         
@@ -412,8 +413,8 @@ class BMPlayerControlView: UIView, BMPlayerCustomControlView {
         
         self.addSubview(centerButton)
         centerButton.isHidden = true
-        centerButton.setImage(BMImageResourcePath("BMPlayer_replay"), for: UIControlState())
-        centerButton.addTarget(self, action: #selector(self.onReplyButtonPressed), for: UIControlEvents.touchUpInside)
+        centerButton.setImage(BMImageResourcePath("BMPlayer_replay"), for: UIControl.State())
+        centerButton.addTarget(self, action: #selector(self.onReplyButtonPressed), for: UIControl.Event.touchUpInside)
     }
     
     fileprivate func addSnapKitConstraint() {

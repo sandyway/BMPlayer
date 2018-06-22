@@ -265,7 +265,7 @@ open class BMPlayer: UIView {
         }
         NSObject.cancelPreviousPerformRequests(withTarget: self, selector: #selector(BMPlayer.basePause), object: nil)
         NSObject.cancelPreviousPerformRequests(withTarget: self, selector: #selector(BMPlayer.basePlay), object: nil)
-        perform(#selector(BMPlayer.basePlay), with: nil, afterDelay: delay, inModes: [RunLoopMode.commonModes])
+        perform(#selector(BMPlayer.basePlay), with: nil, afterDelay: delay, inModes: [RunLoop.Mode.common])
     }
     
     func pauseDelay(_ delay: Double = 0) {
@@ -276,7 +276,7 @@ open class BMPlayer: UIView {
         }
         NSObject.cancelPreviousPerformRequests(withTarget: self, selector: #selector(BMPlayer.basePause), object: nil)
         NSObject.cancelPreviousPerformRequests(withTarget: self, selector: #selector(BMPlayer.basePlay), object: nil)
-        perform(#selector(BMPlayer.basePause), with: nil, afterDelay: delay, inModes: [RunLoopMode.commonModes])
+        perform(#selector(BMPlayer.basePause), with: nil, afterDelay: delay, inModes: [RunLoop.Mode.common])
     }
     
     /**
@@ -428,7 +428,7 @@ open class BMPlayer: UIView {
         
         // 判断是垂直移动还是水平移动
         switch pan.state {
-        case UIGestureRecognizerState.began:
+        case UIGestureRecognizer.State.began:
             // 使用绝对值来判断移动的方向
             
             let x = fabs(velocityPoint.x)
@@ -452,7 +452,7 @@ open class BMPlayer: UIView {
                 }
             }
             
-        case UIGestureRecognizerState.changed:
+        case UIGestureRecognizer.State.changed:
             cancelAutoFadeOutControlBar()
             switch self.panDirection {
             case BMPanDirection.horizontal:
@@ -460,14 +460,14 @@ open class BMPlayer: UIView {
             case BMPanDirection.vertical:
                 self.verticalMoved(velocityPoint.y)
             }
-        case UIGestureRecognizerState.cancelled:
+        case UIGestureRecognizer.State.cancelled:
             switch self.panDirection {
             case BMPanDirection.horizontal:
                 controlView.hideSeekToView()
             default:
                 break
             }
-        case UIGestureRecognizerState.ended:
+        case UIGestureRecognizer.State.ended:
             // 移动结束也需要判断垂直或者平移
             // 比如水平移动结束时，要快进到指定位置，如果这里没有判断，当我们调节音量完之后，会出现屏幕跳动的bug
             switch (self.panDirection) {
@@ -608,11 +608,11 @@ open class BMPlayer: UIView {
         if isSlowed {
             self.playerLayer?.player?.rate = 1.0
             self.isSlowed = false
-            self.controlView.playerSlowButton?.setTitle("慢放", for: UIControlState())
+            self.controlView.playerSlowButton?.setTitle("慢放", for: UIControl.State())
         } else {
             self.playerLayer?.player?.rate = 0.5
             self.isSlowed = true
-            self.controlView.playerSlowButton?.setTitle("正常", for: UIControlState())
+            self.controlView.playerSlowButton?.setTitle("正常", for: UIControl.State())
         }
     }
     
@@ -621,11 +621,11 @@ open class BMPlayer: UIView {
         if isMirrored {
             self.playerLayer?.transform = CGAffineTransform(scaleX: 1.0, y: 1.0)
             self.isMirrored = false
-            self.controlView.playerMirrorButton?.setTitle("镜像", for: UIControlState())
+            self.controlView.playerMirrorButton?.setTitle("镜像", for: UIControl.State())
         } else {
             self.playerLayer?.transform = CGAffineTransform(scaleX: -1.0, y: 1.0)
             self.isMirrored = true
-            self.controlView.playerMirrorButton?.setTitle("正常", for: UIControlState())
+            self.controlView.playerMirrorButton?.setTitle("正常", for: UIControl.State())
         }    }
     
     @objc fileprivate func replayButtonPressed() {
@@ -696,7 +696,7 @@ open class BMPlayer: UIView {
         pauseDelay()
         playerLayer?.prepareToDeinit()
         NotificationCenter.default.removeObserver(self)
-        NotificationCenter.default.removeObserver(self, name: NSNotification.Name.UIApplicationDidChangeStatusBarOrientation, object: nil)
+        NotificationCenter.default.removeObserver(self, name: UIApplication.didChangeStatusBarOrientationNotification, object: nil)
         NSObject.cancelPreviousPerformRequests(withTarget: self)
     }
     
@@ -815,17 +815,17 @@ open class BMPlayer: UIView {
     }
     
     fileprivate func initUIData() {
-        controlView.playerPlayButton?.addTarget(self, action: #selector(self.playButtonPressed(_:)), for: UIControlEvents.touchUpInside)
-        controlView.playerFullScreenButton?.addTarget(self, action: #selector(self.fullScreenButtonPressed(_:)), for: UIControlEvents.touchUpInside)
-        controlView.playerBackButton?.addTarget(self, action: #selector(self.backButtonPressed(_:)), for: UIControlEvents.touchUpInside)
-        controlView.playerTimeSlider?.addTarget(self, action: #selector(progressSliderTouchBegan(_:)), for: UIControlEvents.touchDown)
-        controlView.playerTimeSlider?.addTarget(self, action: #selector(progressSliderValueChanged(_:)), for: UIControlEvents.valueChanged)
-        controlView.playerTimeSlider?.addTarget(self, action: #selector(progressSliderTouchEnded(_:)), for: [UIControlEvents.touchUpInside,UIControlEvents.touchCancel, UIControlEvents.touchUpOutside])
+        controlView.playerPlayButton?.addTarget(self, action: #selector(self.playButtonPressed(_:)), for: UIControl.Event.touchUpInside)
+        controlView.playerFullScreenButton?.addTarget(self, action: #selector(self.fullScreenButtonPressed(_:)), for: UIControl.Event.touchUpInside)
+        controlView.playerBackButton?.addTarget(self, action: #selector(self.backButtonPressed(_:)), for: UIControl.Event.touchUpInside)
+        controlView.playerTimeSlider?.addTarget(self, action: #selector(progressSliderTouchBegan(_:)), for: UIControl.Event.touchDown)
+        controlView.playerTimeSlider?.addTarget(self, action: #selector(progressSliderValueChanged(_:)), for: UIControl.Event.valueChanged)
+        controlView.playerTimeSlider?.addTarget(self, action: #selector(progressSliderTouchEnded(_:)), for: [UIControl.Event.touchUpInside,UIControl.Event.touchCancel, UIControl.Event.touchUpOutside])
         controlView.playerSlowButton?.addTarget(self, action: #selector(slowButtonPressed(_:)), for: .touchUpInside)
         controlView.playerMirrorButton?.addTarget(self, action: #selector(mirrorButtonPressed(_:)), for: .touchUpInside)
-        controlView.playerRatioButton?.addTarget(self, action: #selector(self.ratioButtonPressed(_:)), for: UIControlEvents.touchUpInside)
+        controlView.playerRatioButton?.addTarget(self, action: #selector(self.ratioButtonPressed(_:)), for: UIControl.Event.touchUpInside)
         
-        NotificationCenter.default.addObserver(self, selector: #selector(self.onOrientationChanged), name: NSNotification.Name.UIApplicationDidChangeStatusBarOrientation, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(self.onOrientationChanged), name: UIApplication.didChangeStatusBarOrientationNotification, object: nil)
     }
     
     fileprivate func configureVolume() {
